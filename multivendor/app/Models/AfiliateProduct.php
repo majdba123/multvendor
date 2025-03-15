@@ -13,7 +13,7 @@ class AfiliateProduct extends Model
         'afiliate_id',
         'product_id',
         'status',
-        'percent',
+        'countpayment',
         'profit',
     ];
     public function Afiliate()

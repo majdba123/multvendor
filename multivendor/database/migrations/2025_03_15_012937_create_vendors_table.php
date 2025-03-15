@@ -12,8 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('vendors', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
+            $table->id(); // Primary key
+            $table->foreignId('user_id') // Foreign key to users table
+                  ->constrained()
+                  ->cascadeOnDelete();
+            $table->timestamps(); // Created at and updated at
         });
     }
 

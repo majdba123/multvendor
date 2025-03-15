@@ -12,8 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('coupons', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
+            $table->id(); // Primary key
+            $table->string('token')->unique(); // Unique token for the coupon
+            $table->dateTime('time'); // Expiry or validity time for the coupon
+            $table->string('status')->default('active'); // Status of the coupon (e.g., active, inactive)
+            $table->timestamps(); // Created at and updated at
         });
     }
 

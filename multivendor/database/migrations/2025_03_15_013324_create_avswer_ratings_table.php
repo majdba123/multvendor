@@ -12,8 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('avswer_ratings', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
+                $table->id(); // Primary key
+                $table->foreignId('rating_id') // Foreign key referencing ratings table
+                      ->constrained('ratings')
+                      ->cascadeOnDelete();
+                $table->foreignId('user_id') // Foreign key referencing users table
+                      ->constrained()
+                      ->cascadeOnDelete();
+                $table->text('comment')->nullable(); // Comment for the answer rating
+                $table->timestamps();
         });
     }
 

@@ -12,13 +12,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
-            $table->rememberToken();
-            $table->timestamps();
+            $table->id(); // Primary key
+            $table->string('name'); // User's name
+            $table->string('google_id')->nullable(); // Google ID for Social Login
+            $table->string('facebook_id')->nullable(); // Facebook ID for Social Login
+            $table->string('phone')->nullable(); // Phone number
+            $table->string('email')->unique(); // Email address
+            $table->string('otp')->default(0); // OTP for phone verification
+            $table->string('type')->default(0); // OTP for phone verification
+            $table->string('password'); // Password (hashed)
+            $table->timestamp('email_verified_at')->nullable(); // Email verification
+            $table->rememberToken(); // For "remember me" functionality
+            $table->timestamps(); // Created at and updated at
         });
     }
 

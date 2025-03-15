@@ -12,8 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('order_coupons', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
+                $table->id(); // Primary key
+                $table->foreignId('order_id') // Foreign key referencing orders table
+                      ->constrained()
+                      ->cascadeOnDelete();
+                $table->foreignId('coupon_id') // Foreign key referencing coupons table
+                      ->constrained()
+                      ->cascadeOnDelete();
+                $table->decimal('value', 10, 2); // Value of the coupon's discount applied to the order
+                $table->timestamps();
         });
     }
 

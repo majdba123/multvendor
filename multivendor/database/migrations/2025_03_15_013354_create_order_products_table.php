@@ -12,7 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('order_products', function (Blueprint $table) {
-            $table->id();
+            $table->id(); // Primary key
+            $table->foreignId('order_id') // Foreign key referencing orders table
+                  ->constrained()
+                  ->cascadeOnDelete();
+            $table->foreignId('product_id') // Foreign key referencing products table
+                  ->constrained()
+                  ->cascadeOnDelete();
+            $table->integer('quantity')->default(1); // Quantity of the product in the order
+            $table->decimal('total_price', 10, 2); // Total price for this product in the order
             $table->timestamps();
         });
     }

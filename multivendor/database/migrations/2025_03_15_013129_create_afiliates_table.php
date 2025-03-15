@@ -12,8 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('afiliates', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
+            $table->id(); // Primary key
+            $table->unsignedBigInteger('user_id'); // Foreign key reference to users table
+            $table->string('status')->default('pending'); // Status of the affiliate
+            $table->timestamps(); // Created at and updated at
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

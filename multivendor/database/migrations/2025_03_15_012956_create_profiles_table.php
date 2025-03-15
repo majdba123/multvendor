@@ -12,8 +12,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('profiles', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
+            $table->id(); // Primary key
+            $table->foreignId('user_id') // Foreign key referencing users table
+                  ->constrained()
+                  ->cascadeOnDelete();
+            $table->decimal('lang', 10, 7)->nullable(); // Longitude (high precision for coordinates)
+            $table->decimal('lat', 10, 7)->nullable(); // Latitude (high precision for coordinates)
+            $table->string('image')->nullable(); // Profile image path
+            $table->string('address')->nullable(); // User's
         });
     }
 
