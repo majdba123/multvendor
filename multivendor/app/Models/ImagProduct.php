@@ -16,8 +16,5 @@ class ImagProduct extends Model
     {
         return $this->belongsTo(Product::class,'product_id');
     }
-    public function sub_category()
-    {
-        return $this->hasMany(SubCategory::class);
-    }
+
 }

@@ -1,0 +1,59 @@
+<?php
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Category\CategoryController;
+use App\Http\Controllers\Category\SubCategortController;
+use App\Http\Controllers\AdminController;
+
+
+
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register API routes for your application. These
+| routes are loaded by the RouteServiceProvider and all of them will
+| be assigned to the "api" middleware group. Make something great!
+|
+*/
+
+Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+    return $request->user();
+});
+
+
+Route::middleware(['auth:sanctum'])->group(function () {
+
+    Route::prefix('categories')->group(function () {
+        Route::get('get_all', [CategoryController::class, 'index']);
+        Route::post('store', [CategoryController::class, 'store']);
+        Route::post('update/{id}', [CategoryController::class, 'update']);
+        Route::delete('delete/{id}', [CategoryController::class, 'destroy']);
+        Route::get('show/{id}', [CategoryController::class, 'show']);
+
+    });
+
+   Route::prefix('subcategories')->group(function () {
+        Route::get('getall/', [SubCategortController::class, 'index']); // عرض جميع الفئات الفرعية
+        Route::get('get_by_category/{category_id}/', [SubCategortController::class, 'get_by_category']); // عرض جميع الفئات الفرعية
+        Route::get('show/{id}', [SubCategortController::class, 'show']); // عرض الفئة الفرعية حسب ID
+        Route::post('store', [SubCategortController::class, 'store']); // إضافة فئة فرعية جديدة
+        Route::post('update/{id}', [SubCategortController::class, 'update']); // تعديل الفئة الفرعية حسب ID
+        Route::delete('delete/{id}', [SubCategortController::class, 'destroy']); // حذف الفئة الفرعية حسب ID
+    });
+
+    Route::prefix('vendores')->group(function () {
+        Route::post('store', [AdminController::class, 'createUserAndVendor']);
+        Route::put('update/{vendor_id}', [AdminController::class, 'updateUserAndVendor']);
+        Route::post('update_status/{vendor_id}', [AdminController::class, 'updateVendorStatus']);
+        Route::get('/get_by_status', [AdminController::class, 'getVendorsByStatus']);
+        Route::get('/show_info/{vendor_id}', [AdminController::class, 'getVendorInfo']);
+
+    });
+
+});
+
+
+

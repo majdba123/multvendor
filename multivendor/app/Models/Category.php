@@ -27,6 +27,10 @@ class Category extends Model
         return $this->morphMany(Favourite::class, 'favoritable');
     }
 
+    public function sub_category()
+    {
+        return $this->hasMany(SubCategory::class);
+    }
 
 
 }

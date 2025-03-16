@@ -16,6 +16,8 @@ return new class extends Migration
             $table->foreignId('user_id') // Foreign key to users table
                   ->constrained()
                   ->cascadeOnDelete();
+            $table->string('status')->default("pending"); // OTP for phone verification
+
             $table->timestamps(); // Created at and updated at
         });
     }

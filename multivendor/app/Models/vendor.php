@@ -11,6 +11,7 @@ class vendor extends Model
 
     protected $fillable = [
         'user_id',
+        'status',
     ];
 
 
