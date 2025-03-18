@@ -16,6 +16,10 @@ return new class extends Migration
                 $table->foreignId('sub_category_id') // Foreign key referencing sub_categories table
                       ->constrained()
                       ->cascadeOnDelete();
+
+                $table->foreignId('vendor_id') // Foreign key referencing sub_categories table
+                            ->constrained()
+                            ->cascadeOnDelete();
                 $table->string('name'); // Name of the product
                 $table->text('discription')->nullable(); // Description of the product
                 $table->decimal('price', 10, 2); // Price of the product

@@ -10,6 +10,7 @@ class Product extends Model
     use HasFactory;
     protected $fillable = [
         'sub_category_id',
+        'vendor_id',
         'name',
         'discription',
         'price',
@@ -17,6 +18,10 @@ class Product extends Model
     public function subcategory()
     {
         return $this->belongsTo(SubCategory::class,'sub_category_id');
+    }
+    public function vendor()
+    {
+        return $this->belongsTo(vendor::class,'vendor_id');
     }
     public function discount()
     {
@@ -26,6 +31,12 @@ class Product extends Model
     {
         return $this->hasMany(OrderProduct::class);
     }
+
+    public function images()
+    {
+        return $this->hasMany(ImagProduct::class);
+    }
+
 
     public function Favourite_user()
     {

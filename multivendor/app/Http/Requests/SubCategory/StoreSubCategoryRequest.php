@@ -27,7 +27,7 @@ class StoreSubCategoryRequest extends FormRequest
     {
         return [
             'category_id.required' => 'The category_id field is required.',
-            'category_id.exists' => 'The category_id must be a string.',
+            'category_id.exists' => 'The category_id must be a exists.',
             'name.max' => 'The name may not be greater than 255 characters.',
             'name.required' => 'The name field is required.',
             'imag.required' => 'The image field is required.',

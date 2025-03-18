@@ -47,6 +47,13 @@ class RouteServiceProvider extends ServiceProvider
                 ->group(base_path('routes/Admin.php'));
 
 
+            Route::middleware('api') // اجعلها تحت ميدل وير API
+                ->prefix('vendor')
+                ->group(base_path('routes/Vendor.php'));
+
+
+
+
 
         });
     }
