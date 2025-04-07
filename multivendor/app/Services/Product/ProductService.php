@@ -97,22 +97,22 @@ class ProductService
                 $query->where('name', 'LIKE', "%$name%");
             }
 
-            // إضافة شرط الكاتيغوري بناءً على العلاقة مع الفئة الفرعية
             if (!is_null($category)) {
-                $query->whereHas('subcategory.Category', function ($q) use ($category) {
-                    $q->where('id', $category); // تحقق من معرف الكاتيغوري
+                $query->whereHas('subcategory.category', function ($q) use ($category) {
+                    $q->where('id', $category);
                 });
             }
 
-            // إضافة شرط الفئة الفرعية إذا تم تمريرها
             if (!is_null($subcategory)) {
                 $query->where('sub_category_id', $subcategory);
             }
 
-            // إضافة شرط السعر
             if ($minPrice >= 0 && $maxPrice >= $minPrice) {
                 $query->whereBetween('price', [$minPrice, $maxPrice]);
             }
+
+            // ترتيب المنتجات حسب الأحدث
+            $query->orderBy('created_at', 'desc');
 
             // جلب المنتجات مع العلاقات وتحويل البيانات
             return $query->with(['subcategory.category', 'discount', 'images'])
@@ -125,41 +125,43 @@ class ProductService
                         'price' => $product->price,
                         'subcategory' => $product->subcategory->name ?? null,
                         'subcategory_id' => $product->subcategory->id ?? null,
-                        'category' => $product->subcategory->category->name ?? null, // جلب اسم الكاتيغوري
-                        'category_id' => $product->subcategory->category->id ?? null, // جلب معرف الكاتيغوري
+                        'category' => $product->subcategory->category->name ?? null,
+                        'category_id' => $product->subcategory->category->id ?? null,
                         'discount' => $product->discount->percentage ?? 0,
-                        'images' => $product->images->pluck('imag'), // جلب الروابط فقط
+                        'images' => $product->images->pluck('imag'),
                     ];
                 });
         }
 
 
-    public function getProductsByCategory($categoryId, $perPage)
-    {
-        return Product::whereHas('subcategory', function ($query) use ($categoryId) {
-            $query->where('category_id', $categoryId);
-        })
-        ->with(['subcategory', 'discount', 'images'])
-        ->paginate($perPage)
-        ->transform(function ($product) {
-            return [
-                'id' => $product->id,
-                'name' => $product->name,
-                'description' => $product->description,
-                'price' => $product->price,
-                'subcategory' => $product->subcategory->name ?? null,
-                'subcategory_id' => $product->subcategory->id ?? null,
-                'discount' => $product->discount->percentage ?? 0,
-                'images' => $product->images->pluck('imag'),
-            ];
-        });
-    }
+        public function getProductsByCategory($categoryId, $perPage)
+        {
+            return Product::whereHas('subcategory', function ($query) use ($categoryId) {
+                $query->where('category_id', $categoryId);
+            })
+            ->with(['subcategory', 'discount', 'images'])
+            ->orderBy('created_at', 'desc') // ترتيب المنتجات حسب الأحدث
+            ->paginate($perPage)
+            ->transform(function ($product) {
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'description' => $product->description,
+                    'price' => $product->price,
+                    'subcategory' => $product->subcategory->name ?? null,
+                    'subcategory_id' => $product->subcategory->id ?? null,
+                    'discount' => $product->discount->percentage ?? 0,
+                    'images' => $product->images->pluck('imag'),
+                ];
+            });
+        }
 
     // جلب المنتجات حسب الفئة الفرعية
     public function getProductsBySubCategory($subCategoryId, $perPage)
     {
         return Product::where('sub_category_id', $subCategoryId)
             ->with(['subcategory', 'discount', 'images'])
+            ->orderBy('created_at', 'desc') // ترتيب المنتجات حسب الأحدث
             ->paginate($perPage)
             ->transform(function ($product) {
                 return [
@@ -174,17 +176,10 @@ class ProductService
             });
     }
 
+
     // جلب المنتجات حسب الاسم
     public function searchProducts($name = null, $minPrice = 0, $maxPrice = PHP_INT_MAX, $perPage = 5)
     {
-        // تسجيل القيم المرسلة
-        Log::info('Search Params:', [
-            'name' => $name,
-            'minPrice' => $minPrice,
-            'maxPrice' => $maxPrice,
-            'perPage' => $perPage,
-        ]);
-
         $query = Product::query();
 
         if (!is_null($name) && !empty($name)) {
@@ -194,6 +189,9 @@ class ProductService
         if ($minPrice >= 0 && $maxPrice >= $minPrice) {
             $query->whereBetween('price', [$minPrice, $maxPrice]);
         }
+
+        // ترتيب المنتجات حسب الأحدث
+        $query->orderBy('created_at', 'desc');
 
         $products = $query->with(['subcategory', 'discount', 'images'])->paginate($perPage);
 
@@ -220,6 +218,8 @@ class ProductService
     {
         return Product::where('vendor_id', $vendorId)
             ->with(['subcategory', 'discount', 'images'])
+            ->orderBy('created_at', 'desc') // ترتيب المنتجات حسب الأحدث
             ->paginate($perPage);
     }
+
 }

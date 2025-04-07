@@ -6,7 +6,7 @@ use App\Http\Controllers\Category\CategoryController;
 use App\Http\Controllers\Category\SubCategortController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\Product\ProductController;
-
+use App\Http\Controllers\VendorController;
 
 
 /*
@@ -25,7 +25,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 
-Route::middleware(['auth:sanctum'])->group(function () {
+Route::middleware(['auth:sanctum', 'admin'])->group(function () {
 
     Route::prefix('categories')->group(function () {
         Route::get('get_all', [CategoryController::class, 'index']);
@@ -33,10 +33,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('update/{id}', [CategoryController::class, 'update']);
         Route::delete('delete/{id}', [CategoryController::class, 'destroy']);
         Route::get('show/{id}', [CategoryController::class, 'show']);
-
     });
 
-   Route::prefix('subcategories')->group(function () {
+    Route::prefix('subcategories')->group(function () {
         Route::get('getall/', [SubCategortController::class, 'index']); // عرض جميع الفئات الفرعية
         Route::get('get_by_category/{category_id}/', [SubCategortController::class, 'get_by_category']); // عرض جميع الفئات الفرعية
         Route::get('show/{id}', [SubCategortController::class, 'show']); // عرض الفئة الفرعية حسب ID
@@ -51,19 +50,27 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('update_status/{vendor_id}', [AdminController::class, 'updateVendorStatus']);
         Route::get('/get_by_status', [AdminController::class, 'getVendorsByStatus']);
         Route::get('/show_info/{vendor_id}', [AdminController::class, 'getVendorInfo']);
-
     });
 
     Route::prefix('product')->group(function () {
 
         Route::get('/category/{categoryId}', [ProductController::class, 'getProductsByCategory']);
         Route::get('/subcategory/{subCategoryId}', [ProductController::class, 'getProductsBySubCategory']);
-        Route::post('/search', [ProductController::class, 'searchProducts']);
+        Route::get('/search', [ProductController::class, 'searchProducts']);
         Route::get('/vendor/{vendorId}', [ProductController::class, 'getProductsByVendor']);
+    });
 
-        });
+
+    Route::prefix('orders')->group(function () {
+
+        Route::get('get_all/ByVendor/{id}', [VendorController::class, 'getVendorOrders']);
+        Route::get('get_all_by_status', [AdminController::class, 'getOrdersByStatus']);
+        Route::get('get_all_by_price', [AdminController::class, 'getOrdersByPriceRange']);
+        Route::get('/get_all_by_produt_id/{product_id}', [AdminController::class, 'getOrdersByProduct']);
+        Route::get('/get_all_by_user_id/{user_id}', [AdminController::class, 'getOrdersByUser']);
+        Route::get('/get_all_by_category/{category_id}', [AdminController::class, 'getOrdersByCategory']);
+        Route::get('/get_all_by_sub_category/{sub_category_id}', [AdminController::class, 'getOrdersBySubCategory']);
+
+    });
 
 });
-
-
-

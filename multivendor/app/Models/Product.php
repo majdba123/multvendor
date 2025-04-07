@@ -47,4 +47,19 @@ class Product extends Model
     {
         return $this->hasMany(AfiliateProduct::class);
     }
+
+
+    public function scopeByCategory($query, $categoryId)
+    {
+        return $query->whereHas('subcategory', function ($q) use ($categoryId) {
+            $q->where('category_id', $categoryId);
+        });
+    }
+
+    public function scopeBySubCategory($query, $subCategoryId)
+    {
+        return $query->where('sub_category_id', $subCategoryId);
+    }
+
+
 }

@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Vendor\CreateUserAndVendorRequest;
 use App\Http\Requests\Vendor\UpdateUserAndVendorRequest;
 use Illuminate\Http\JsonResponse;
-
+use App\Services\Order\OrderService;
 use App\Services\Vendor\UserVendorService;
 
 use Illuminate\Http\Request;
@@ -12,10 +12,12 @@ use Illuminate\Http\Request;
 class AdminController extends Controller
 {
     protected $service;
+    protected $order;
 
-    public function __construct(UserVendorService $service)
+    public function __construct(UserVendorService $service,OrderService $order )
     {
         $this->service = $service;
+        $this->order = $order;
     }
 
 
@@ -99,6 +101,127 @@ class AdminController extends Controller
             ], 500); // HTTP status code 500 يشير إلى خطأ داخلي في الخادم
         }
     }
+
+    public function getOrdersByStatus(Request $request)
+    {
+        try {
+            // التحقق من صحة إدخال الحالة
+            $request->validate([
+                'status' => 'required|string|in:pending,cancelled,complete,all',
+            ]);
+
+            // استدعاء الخدمة لجلب الطلبات بناءً على الحالة
+            $orders = $this->order->getOrdersByStatus($request->status);
+
+            return response()->json([
+                'message' => 'Orders retrieved successfully.',
+                'orders' => $orders,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while fetching orders.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function getOrdersByPriceRange(Request $request)
+    {
+        try {
+            // التحقق من صحة إدخالات النطاق السعري
+            $request->validate([
+                'min_price' => 'required|numeric|min:0',
+                'max_price' => 'required|numeric|min:0',
+            ]);
+
+            // استدعاء الخدمة لجلب الطلبات
+            $orders = $this->order->getOrdersByPriceRange($request->min_price, $request->max_price);
+
+            return response()->json([
+                'message' => 'Orders retrieved successfully.',
+                'orders' => $orders,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while fetching orders.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+
+    public function getOrdersByProduct($productId)
+    {
+        try {
+            $orders = $this->order->getOrdersByProduct($productId);
+
+            return response()->json([
+                'message' => 'Orders retrieved successfully.',
+                'orders' => $orders,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while fetching orders.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+
+    public function getOrdersByUser($userId)
+    {
+        try {
+            $orders = $this->order->getOrdersByUser($userId);
+
+            return response()->json([
+                'message' => 'Orders retrieved successfully.',
+                'orders' => $orders,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while fetching orders.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function getOrdersByCategory($categoryId)
+    {
+        try {
+            $orders = $this->order->getOrdersByCategory($categoryId);
+
+            return response()->json([
+                'message' => 'Orders retrieved successfully.',
+                'orders' => $orders,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while fetching orders by category.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function getOrdersBySubCategory($subCategoryId)
+    {
+        try {
+            $orders = $this->order->getOrdersBySubCategory($subCategoryId);
+
+            return response()->json([
+                'message' => 'Orders retrieved successfully.',
+                'orders' => $orders,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while fetching orders by subcategory.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
 
 
 

@@ -21,6 +21,7 @@ return new class extends Migration
                   ->cascadeOnDelete();
             $table->integer('quantity')->default(1); // Quantity of the product in the order
             $table->decimal('total_price', 10, 2); // Total price for this product in the order
+            $table->string('status')->default('pending');
             $table->timestamps();
         });
     }

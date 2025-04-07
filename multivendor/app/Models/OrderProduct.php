@@ -13,6 +13,7 @@ class OrderProduct extends Model
         'product_id',
         'quantity',
         'total_price',
+        'status',
 
 
     ];
@@ -23,5 +24,9 @@ class OrderProduct extends Model
     public function Product()
     {
         return $this->belongsTo(Product::class,'product_id');
+    }
+    public function scopeByProduct($query, $productId)
+    {
+        return $query->where('product_id', $productId);
     }
 }
