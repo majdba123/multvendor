@@ -10,25 +10,49 @@ use Illuminate\Support\Facades\Log;
 
 class ProductService
 {
-    public function createProduct(array $data,$vendor_id)
+    public function createProduct(array $data, $vendor_id)
     {
-
-        // إنشاء المنتج وربطه بالعلاقة البولي مورفيك
-        return Product::create([
+        // إنشاء المنتج الأساسي
+        $product = Product::create([
             'name' => $data['name'],
             'description' => $data['description'],
             'price' => $data['price'],
             'sub_category_id' => $data['sub_category_id'],
             'vendor_id' => $vendor_id,
-
         ]);
-    }
 
+        // إضافة الخصائص (Attributes) للمنتج
+        if (isset($data['attributes']) && is_array($data['attributes'])) {
+            foreach ($data['attributes'] as $attribute) {
+                $product->ProductAttr()->create([
+                    'attribute_id' => $attribute['attribute_id'],
+                    'value' => $attribute['value'],
+                ]);
+            }
+        }
+
+        // جلب المنتج مع العلاقات لإرجاعه بنفس هيكل باقي الدوال
+        $productWithRelations = Product::with(['subcategory.Category', 'discount', 'images', 'ProductAttr.Attribute'])
+            ->find($product->id);
+
+        return [
+            'id' => $productWithRelations->id,
+            'name' => $productWithRelations->name,
+            'description' => $productWithRelations->description,
+            'price' => $productWithRelations->price,
+            'subcategory' => $productWithRelations->subcategory->name ?? null,
+            'subcategory_id' => $productWithRelations->subcategory->id ?? null,
+            'category' => $productWithRelations->subcategory->category->name ?? null,
+            'category_id' => $productWithRelations->subcategory->category->id ?? null,
+            'discount' => $productWithRelations->discount->percentage ?? 0,
+            'images' => $productWithRelations->images->pluck('imag'),
+            'attributes' => $productWithRelations->attributes_data
+        ];
+    }
 
     public function updateProduct(array $data, $product)
     {
-
-        // تحديث المنتج الموجود
+        // تحديث بيانات المنتج الأساسية
         $product->update([
             'name' => $data['name'] ?? $product->name,
             'description' => $data['description'] ?? $product->description,
@@ -36,7 +60,41 @@ class ProductService
             'sub_category_id' => $data['sub_category_id'] ?? $product->sub_category_id,
         ]);
 
-        return $product;
+        // تحديث الخصائص (Attributes) للمنتج
+        if (isset($data['attributes']) && is_array($data['attributes'])) {
+            foreach ($data['attributes'] as $attributeData) {
+                $existingAttribute = $product->ProductAttr()
+                    ->where('attribute_id', $attributeData['attribute_id'])
+                    ->first();
+
+                if ($existingAttribute) {
+                    $existingAttribute->update(['value' => $attributeData['value']]);
+                } else {
+                    $product->ProductAttr()->create([
+                        'attribute_id' => $attributeData['attribute_id'],
+                        'value' => $attributeData['value']
+                    ]);
+                }
+            }
+        }
+
+        // جلب المنتج مع العلاقات بعد التحديث
+        $updatedProduct = Product::with(['subcategory.Category', 'discount', 'images', 'ProductAttr.Attribute'])
+            ->find($product->id);
+
+        return [
+            'id' => $updatedProduct->id,
+            'name' => $updatedProduct->name,
+            'description' => $updatedProduct->description,
+            'price' => $updatedProduct->price,
+            'subcategory' => $updatedProduct->subcategory->name ?? null,
+            'subcategory_id' => $updatedProduct->subcategory->id ?? null,
+            'category' => $updatedProduct->subcategory->category->name ?? null,
+            'category_id' => $updatedProduct->subcategory->category->id ?? null,
+            'discount' => $updatedProduct->discount->percentage ?? 0,
+            'images' => $updatedProduct->images->pluck('imag'),
+            'attributes' => $updatedProduct->attributes_data
+        ];
     }
 
     public function deleteProduct($id): array
@@ -61,11 +119,21 @@ class ProductService
 
     public function getProductById($id)
     {
-        $product = Product::with('images')->find($id);
+        $product = Product::with(['subcategory.Category', 'discount', 'images', 'ProductAttr.Attribute'])->find($id);
         if (!$product) {
             return response()->json(['message' => 'Product not found'], 404);
         }
-        return $product;
+
+        return [
+            'id' => $product->id,
+            'name' => $product->name,
+            'description' => $product->description,
+            'price' => $product->price,
+            'subcategory' => $product->subcategory->name ?? null,
+            'subcategory_id' => $product->subcategory->id ?? null,
+            'images' => $product->images->pluck('imag'),
+            'attributes' => $product->attributes_data // استخدام الخاصية المضافة
+        ];
     }
 
 
@@ -89,10 +157,8 @@ class ProductService
 
         public function getPaginatedVendorProducts($vendorId, $perPage, $name = null, $category = null, $subcategory = null, $minPrice = 0, $maxPrice = PHP_INT_MAX)
         {
-            // بناء الاستعلام لجلب المنتجات الخاصة بالتاجر فقط
             $query = Product::where('vendor_id', $vendorId);
 
-            // إضافة شروط اختيارية بناءً على المعايير
             if (!is_null($name) && !empty($name)) {
                 $query->where('name', 'LIKE', "%$name%");
             }
@@ -111,13 +177,9 @@ class ProductService
                 $query->whereBetween('price', [$minPrice, $maxPrice]);
             }
 
-            // ترتيب المنتجات حسب الأحدث
-            $query->orderBy('created_at', 'desc');
-
-            // جلب المنتجات مع العلاقات وتحويل البيانات
-            return $query->with(['subcategory.category', 'discount', 'images'])
+            return $query->with(['subcategory.Category', 'discount', 'images', 'ProductAttr.Attribute'])
                 ->paginate($perPage)
-                ->transform(function ($product) {
+                ->through(function ($product) {
                     return [
                         'id' => $product->id,
                         'name' => $product->name,
@@ -129,6 +191,7 @@ class ProductService
                         'category_id' => $product->subcategory->category->id ?? null,
                         'discount' => $product->discount->percentage ?? 0,
                         'images' => $product->images->pluck('imag'),
+                        'attributes' => $product->attributes_data // استخدام الخاصية المضافة
                     ];
                 });
         }
@@ -139,10 +202,10 @@ class ProductService
             return Product::whereHas('subcategory', function ($query) use ($categoryId) {
                 $query->where('category_id', $categoryId);
             })
-            ->with(['subcategory', 'discount', 'images'])
-            ->orderBy('created_at', 'desc') // ترتيب المنتجات حسب الأحدث
+            ->with(['subcategory.Category', 'discount', 'images', 'ProductAttr.Attribute'])
+            ->orderBy('created_at', 'desc')
             ->paginate($perPage)
-            ->transform(function ($product) {
+            ->through(function ($product) {
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
@@ -150,8 +213,10 @@ class ProductService
                     'price' => $product->price,
                     'subcategory' => $product->subcategory->name ?? null,
                     'subcategory_id' => $product->subcategory->id ?? null,
+                    'category' => $product->subcategory->category->name ?? null,
                     'discount' => $product->discount->percentage ?? 0,
                     'images' => $product->images->pluck('imag'),
+                    'attributes' => $product->attributes_data // استخدام الخاصية المضافة
                 ];
             });
         }
@@ -160,24 +225,28 @@ class ProductService
     public function getProductsBySubCategory($subCategoryId, $perPage)
     {
         return Product::where('sub_category_id', $subCategoryId)
-            ->with(['subcategory', 'discount', 'images'])
-            ->orderBy('created_at', 'desc') // ترتيب المنتجات حسب الأحدث
+            ->with(['subcategory.Category', 'discount', 'images', 'ProductAttr.Attribute'])
+            ->orderBy('created_at', 'desc')
             ->paginate($perPage)
-            ->transform(function ($product) {
+            ->through(function ($product) {
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
                     'description' => $product->description,
                     'price' => $product->price,
                     'subcategory' => $product->subcategory->name ?? null,
+                    'subcategory_id' => $product->subcategory->id ?? null,
+                    'category' => $product->subcategory->category->name ?? null,
                     'discount' => $product->discount->percentage ?? 0,
                     'images' => $product->images->pluck('imag'),
+                    'attributes' => $product->attributes_data // استخدام الخاصية المضافة
                 ];
             });
     }
 
 
     // جلب المنتجات حسب الاسم
+
     public function searchProducts($name = null, $minPrice = 0, $maxPrice = PHP_INT_MAX, $perPage = 5)
     {
         $query = Product::query();
@@ -190,10 +259,9 @@ class ProductService
             $query->whereBetween('price', [$minPrice, $maxPrice]);
         }
 
-        // ترتيب المنتجات حسب الأحدث
-        $query->orderBy('created_at', 'desc');
-
-        $products = $query->with(['subcategory', 'discount', 'images'])->paginate($perPage);
+        $products = $query->with(['subcategory.category', 'discount', 'images', 'ProductAttr.Attribute'])
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
 
         $products->getCollection()->transform(function ($product) {
             return [
@@ -203,8 +271,10 @@ class ProductService
                 'price' => $product->price,
                 'subcategory' => $product->subcategory->name ?? null,
                 'subcategory_id' => $product->subcategory->id ?? null,
+                'category' => $product->subcategory->category->name ?? null,
                 'discount' => $product->discount->percentage ?? 0,
                 'images' => $product->images->pluck('imag'),
+                'attributes' => $product->attributes_data // استخدام الخاصية المضافة
             ];
         });
 
@@ -212,14 +282,25 @@ class ProductService
     }
 
 
-
-    // جلب المنتجات حسب التاجر
     public function getProductsByVendor($vendorId, $perPage)
     {
         return Product::where('vendor_id', $vendorId)
-            ->with(['subcategory', 'discount', 'images'])
-            ->orderBy('created_at', 'desc') // ترتيب المنتجات حسب الأحدث
-            ->paginate($perPage);
+            ->with(['subcategory.category', 'discount', 'images', 'ProductAttr.Attribute'])
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage)
+            ->through(function ($product) {
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'description' => $product->description,
+                    'price' => $product->price,
+                    'subcategory' => $product->subcategory->name ?? null,
+                    'subcategory_id' => $product->subcategory->id ?? null,
+                    'category' => $product->subcategory->category->name ?? null,
+                    'discount' => $product->discount->percentage ?? 0,
+                    'images' => $product->images->pluck('imag'),
+                    'attributes' => $product->attributes_data // استخدام الخاصية المضافة
+                ];
+            });
     }
-
 }

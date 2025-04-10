@@ -9,12 +9,12 @@ class SubCategoryService
 {
     public function getAll()
     {
-        return SubCategory::all();
+        return SubCategory::with('attribute')->get();
     }
 
     public function getById($id)
     {
-        return SubCategory::findOrFail($id); // يرجع الخطأ 404 إذا لم يتم العثور
+        return SubCategory::with('attribute')->findOrFail($id);
     }
 
     public function store(array $data)
@@ -28,7 +28,19 @@ class SubCategoryService
             $data['imag'] = $imageUrl;
         }
 
-        return SubCategory::create($data);
+        $subcategory = SubCategory::create($data);
+        
+        // Create attributes
+        if (isset($data['attributes'])) {
+            foreach ($data['attributes'] as $attributeData) {
+                $subcategory->attribute()->create([
+                    'name' => $attributeData['name'],
+                    'sub_category_id' => $subcategory->id
+                ]);
+            }
+        }
+
+        return $subcategory->load('attribute');
     }
 
     public function update(SubCategory $subcategory, array $data)
@@ -42,17 +54,31 @@ class SubCategoryService
             $data['imag'] = $imageUrl;
         }
         $subcategory->update($data);
-        return $subcategory;
+        
+        // Update attributes (delete existing and create new ones)
+        if (isset($data['attributes'])) {
+            $subcategory->attribute()->delete();
+            
+            foreach ($data['attributes'] as $attributeData) {
+                $subcategory->attribute()->create([
+                    'name' => $attributeData['name'],
+                    'sub_category_id' => $subcategory->id
+                ]);
+            }
+        }
+
+        return $subcategory->load('attribute');
     }
 
     public function delete(SubCategory $subcategory)
     {
+        // Delete associated attributes first
+        $subcategory->attribute()->delete();
         return $subcategory->delete();
     }
 
-
     public function get_by_category_id($id)
     {
-        return SubCategory::where('category_id' ,$id)->get(); // يرجع الخطأ 404 إذا لم يتم العثور
+        return SubCategory::with('attribute')->where('category_id', $id)->get();
     }
 }

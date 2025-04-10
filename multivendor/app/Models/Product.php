@@ -15,6 +15,14 @@ class Product extends Model
         'discription',
         'price',
     ];
+
+
+    protected $appends = ['attributes_data'];
+
+
+
+
+
     public function subcategory()
     {
         return $this->belongsTo(SubCategory::class,'sub_category_id');
@@ -61,5 +69,25 @@ class Product extends Model
         return $query->where('sub_category_id', $subCategoryId);
     }
 
+
+    public function ProductAttr()
+    {
+        return $this->hasMany(ProductAttr::class);
+    }
+
+
+    // ... العلاقات الأخرى الموجودة ...
+
+    public function getAttributesDataAttribute()
+    {
+        return $this->ProductAttr->map(function($item) {
+            return [
+                'attribute_id' => $item->attribute_id,
+                'product_attributes_id' => $item->id,
+                'name_attributes' => $item->Attribute->name,
+                'value_attributes' => $item->value
+            ];
+        });
+    }
 
 }

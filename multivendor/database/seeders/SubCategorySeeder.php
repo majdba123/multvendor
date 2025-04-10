@@ -24,6 +24,9 @@ class SubCategorySeeder extends Seeder
             'name' => 'SubCategory 2',
         ]);
 
+
+
+
         SubCategory::create([
             'category_id' => 2,
             'name' => 'SubCategory 1',

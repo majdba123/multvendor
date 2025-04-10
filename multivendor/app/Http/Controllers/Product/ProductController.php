@@ -53,7 +53,7 @@ class ProductController extends Controller
 
             // إنشاء الصورة باستخدام الرابط الكامل
             ImagProduct::create([
-                'product_id' => $product->id,
+                'product_id' => $product['id'], // استخدام ID من الناتج
                 'imag' => $imageUrl,
             ]);
 

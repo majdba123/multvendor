@@ -19,6 +19,9 @@ class StoreSubCategoryRequest extends FormRequest
             'category_id' => 'required|exists:categories,id', // التحقق من وجود الفئة
             'name' => 'required|string|max:255', // التحقق من الاسم
             'imag' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'attributes' => 'required|array|min:1',
+            'attributes.*.name' => 'required|string|max:255',
+
 
         ];
     }
@@ -34,6 +37,12 @@ class StoreSubCategoryRequest extends FormRequest
             'imag.image' => 'The uploaded file must be an image.',
             'imag.mimes' => 'The image must be a file of type: jpeg, png, jpg, gif, svg.',
             'imag.max' => 'The image must not be greater than 2048 kilobytes.',
+            'attributes.required' => 'At least one attribute is required.',
+            'attributes.array' => 'Attributes must be an array.',
+            'attributes.min' => 'At least one attribute is required.',
+            'attributes.*.name.required' => 'Each attribute name is required.',
+            'attributes.*.name.string' => 'Each attribute name must be a string.',
+            'attributes.*.name.max' => 'Each attribute name may not be greater than 255 characters.',
         ];
     }
 
