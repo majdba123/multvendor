@@ -45,4 +45,24 @@ return [
         'redirect' => env('FACEBOOK_REDIRECT_URL'),
     ],
 
+
+    'vodafone_cash' => [
+    'api_url' => env('VODAFONE_CASH_API_URL'),
+    'api_key' => env('VODAFONE_CASH_API_KEY'),
+    ],
+
+
+    'payment_gateway' => [
+    'api_url' => env('PAYMENT_GATEWAY_API_URL'),
+    'api_key' => env('PAYMENT_GATEWAY_API_KEY'),
+    ],
+
+    
+    'stripe' => [
+    'key' => env('STRIPE_KEY'),
+    'secret' => env('STRIPE_SECRET'),
+    ],
+
+
+
 ];

@@ -18,6 +18,11 @@ return new class extends Migration
                   ->cascadeOnDelete();
             $table->string('status')->default('pending'); // Order status (e.g., pending, completed)
             $table->decimal('total_price', 10, 2)->default(0.00); // Total price of the order
+
+            $table->string('payment_method')->nullable(); // طريقة الدفع
+            $table->string('payment_status')->default('pending'); // حالة الدفع
+            $table->string('transaction_id')->nullable(); // مرجع الدفع
+            
             $table->timestamps();
         });
     }

@@ -18,6 +18,8 @@ class CreateOrderRequest extends FormRequest
             'products' => 'required|array',
             'products.*.product_id' => ['required', 'integer', 'exists:products,id'],
             'products.*.quantity' => 'required|integer|min:1',
+            'payment_method' => 'required|string|in:visa,paymob', // تحقق من طريقة الدفع
+
         ];
     }
 
@@ -31,6 +33,9 @@ class CreateOrderRequest extends FormRequest
             'products.*.quantity.required' => 'Each product must have a quantity.',
             'products.*.quantity.integer' => 'The quantity must be an integer.',
             'products.*.quantity.min' => 'The quantity must be at least 1.',
+            'payment_method.required' => 'The payment method field is required.',
+            'payment_method.in' => 'The selected payment method is invalid.',
+            'products.required' => 'The products field is required.',
         ];
     }
 
