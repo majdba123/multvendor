@@ -30,6 +30,8 @@ Route::middleware(['auth:sanctum','product_provider'])->group(function () {
         Route::get('getall/', [SubCategortController::class, 'index']); // عرض جميع الفئات الفرعية
         Route::get('get_by_category/{category_id}/', [SubCategortController::class, 'get_by_category']); // عرض جميع الفئات الفرعية
         Route::get('show/{id}', [SubCategortController::class, 'show']); // عرض الفئة الفرعية حسب ID
+        Route::get('getSubCategory_Attributes/{subCategoryId}', [SubCategortController::class, 'getSubCategoryAttributes']);
+
 
     });
 

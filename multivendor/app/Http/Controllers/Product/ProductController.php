@@ -80,10 +80,7 @@ class ProductController extends Controller
             return response()->json(['message' => 'Product not found'], 404);
         }
 
-
-
         $updatedProduct = $this->productService->updateProduct($request->validated(), $product);
-
         // التحقق مما إذا كان الطلب يحتوي على صور جديدة
         if ($request->has('images')) {
             // حذف الصور القديمة

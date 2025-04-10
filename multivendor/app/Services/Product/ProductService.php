@@ -69,11 +69,6 @@ class ProductService
 
                 if ($existingAttribute) {
                     $existingAttribute->update(['value' => $attributeData['value']]);
-                } else {
-                    $product->ProductAttr()->create([
-                        'attribute_id' => $attributeData['attribute_id'],
-                        'value' => $attributeData['value']
-                    ]);
                 }
             }
         }

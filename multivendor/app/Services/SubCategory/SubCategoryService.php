@@ -29,7 +29,7 @@ class SubCategoryService
         }
 
         $subcategory = SubCategory::create($data);
-        
+
         // Create attributes
         if (isset($data['attributes'])) {
             foreach ($data['attributes'] as $attributeData) {
@@ -54,16 +54,16 @@ class SubCategoryService
             $data['imag'] = $imageUrl;
         }
         $subcategory->update($data);
-        
-        // Update attributes (delete existing and create new ones)
-        if (isset($data['attributes'])) {
-            $subcategory->attribute()->delete();
-            
+
+        if (isset($data['attributes']) && is_array($data['attributes'])) {
             foreach ($data['attributes'] as $attributeData) {
-                $subcategory->attribute()->create([
-                    'name' => $attributeData['name'],
-                    'sub_category_id' => $subcategory->id
-                ]);
+                $existingAttribute = $subcategory->attribute()
+                    ->where('id', $attributeData['attribute_id'])
+                    ->first();
+
+                if ($existingAttribute) {
+                    $existingAttribute->update(['name' => $attributeData['name']]);
+                }
             }
         }
 

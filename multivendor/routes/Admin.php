@@ -42,6 +42,8 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
         Route::post('store', [SubCategortController::class, 'store']); // إضافة فئة فرعية جديدة
         Route::post('update/{id}', [SubCategortController::class, 'update']); // تعديل الفئة الفرعية حسب ID
         Route::delete('delete/{id}', [SubCategortController::class, 'destroy']); // حذف الفئة الفرعية حسب ID
+        Route::get('getSubCategory_Attributes/{subCategoryId}', [SubCategortController::class, 'getSubCategoryAttributes']);
+
     });
 
     Route::prefix('vendores')->group(function () {
