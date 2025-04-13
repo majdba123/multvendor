@@ -47,5 +47,3 @@ Route::group(['middleware' => ['web']], function () {
 });
 
 
-Route::post('/paymob/callback', [PaymentController::class, 'handlePaymobCallback']);
-Route::get('/paymob/return', [PaymentController::class, 'handlePaymobReturn']);

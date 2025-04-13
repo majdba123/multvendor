@@ -47,7 +47,6 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     });
 
     Route::prefix('vendores')->group(function () {
-        Route::post('store', [AdminController::class, 'createUserAndVendor']);
         Route::put('update/{vendor_id}', [AdminController::class, 'updateUserAndVendor']);
         Route::post('update_status/{vendor_id}', [AdminController::class, 'updateVendorStatus']);
         Route::get('/get_by_status', [AdminController::class, 'getVendorsByStatus']);
@@ -72,6 +71,16 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
         Route::get('/get_all_by_user_id/{user_id}', [AdminController::class, 'getOrdersByUser']);
         Route::get('/get_all_by_category/{category_id}', [AdminController::class, 'getOrdersByCategory']);
         Route::get('/get_all_by_sub_category/{sub_category_id}', [AdminController::class, 'getOrdersBySubCategory']);
+
+    });
+
+
+
+    Route::prefix('affiliates')->group(function () {
+        Route::put('update/{affiliate_id}', [AdminController::class, 'updateUserAndAfiliate']);
+        Route::post('update_status/{affiliate_id}', [AdminController::class, 'updateAfiliateStatus']);
+        Route::get('/get_by_status', [AdminController::class, 'getAfiliatesByStatus']);
+        Route::get('/show_info/{affiliate_id}', [AdminController::class, 'getAfiliateInfo']);
 
     });
 

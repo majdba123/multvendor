@@ -57,6 +57,10 @@ class User extends Authenticatable
     {
         return $this->hasOne(Vendor::class);
     }
+    public function afiliate()
+    {
+        return $this->hasOne(Afiliate::class);
+    }
     public function driver()
     {
         return $this->hasOne(Driver::class);

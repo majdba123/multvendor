@@ -3,9 +3,13 @@
 namespace App\Http\Controllers;
 use App\Http\Requests\Vendor\CreateUserAndVendorRequest;
 use App\Http\Requests\Vendor\UpdateUserAndVendorRequest;
+use App\Http\Requests\Afiliate\UpdateUserAndAfiliateRequest;
+
 use Illuminate\Http\JsonResponse;
 use App\Services\Order\OrderService;
 use App\Services\Vendor\UserVendorService;
+use App\Services\Afiliate\AfiliateService;
+
 
 use Illuminate\Http\Request;
 
@@ -13,15 +17,18 @@ class AdminController extends Controller
 {
     protected $service;
     protected $order;
+    protected $afiliateService;
 
-    public function __construct(UserVendorService $service,OrderService $order )
+    public function __construct(UserVendorService $service,OrderService $order ,AfiliateService $afiliateService )
     {
         $this->service = $service;
         $this->order = $order;
+        $this->afiliateService = $afiliateService;
+
     }
 
 
-
+    /**vendor_______________________________________________________________________ */
     public function updateUserAndVendor(UpdateUserAndVendorRequest $request, $vendorId): JsonResponse
     {
         // التحقق من البيانات وتأكد من تمرير مصفوفة
@@ -102,6 +109,9 @@ class AdminController extends Controller
         }
     }
 
+
+    /**Order
+     * ____________________________________________________________________________________________________ */
     public function getOrdersByStatus(Request $request)
     {
         try {
@@ -223,6 +233,73 @@ class AdminController extends Controller
 
 
 
+    /**Afiliate _______________       ________________________           _______________________________ */
+
+
+
+    public function updateUserAndAfiliate(UpdateUserAndAfiliateRequest $request, $afiliateId): JsonResponse
+    {
+        $data = $request->validated();
+        $user = $this->afiliateService->updateAfiliateAndUser($afiliateId, $data);
+
+        return response()->json([
+            'message' => 'Afiliate updated successfully.',
+            'user' => $user,
+        ]);
+    }
+
+    public function updateAfiliateStatus(Request $request, $afiliateId)
+    {
+        try {
+            $request->validate([
+                'status' => 'required|string|in:active,pending,pand|max:255',
+            ]);
+
+            $data = $this->afiliateService->updateAfiliateStatus($afiliateId, $request->status);
+
+            return response()->json([
+                'message' => $data['message'],
+                'afiliate_id' => $data['afiliate_id'],
+                'status' => $data['status'],
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed.',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+    }
+
+    public function getAfiliatesByStatus(Request $request)
+    {
+        $status = $request->input('status', 'all');
+        $afiliates = $this->afiliateService->getAfiliatesByStatus($status);
+
+        return response()->json($afiliates);
+    }
+
+    public function getAfiliateInfo($afiliateId)
+    {
+        try {
+            $afiliate = $this->afiliateService->getAfiliateInfo($afiliateId);
+
+            if (!$afiliate) {
+                return response()->json([
+                    'message' => 'Afiliate not found.',
+                ], 404);
+            }
+
+            return response()->json([
+                'message' => 'Afiliate information retrieved successfully.',
+                'afiliate' => $afiliate,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while fetching afiliate information.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 
 
 
