@@ -18,7 +18,7 @@ class CreateOrderRequest extends FormRequest
             'products' => 'required|array',
             'products.*.product_id' => ['required', 'integer', 'exists:products,id'],
             'products.*.quantity' => 'required|integer|min:1',
-            'payment_method' => 'required|string|in:visa,paymob', // تحقق من طريقة الدفع
+            'payment_method' => 'required|string|in:visa,paymob,hand', // تحقق من طريقة الدفع
 
         ];
     }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Category\CategoryController;
 use App\Http\Controllers\Product\ProductController;
 use App\Http\Controllers\Category\SubCategortController;
 use App\Http\Controllers\VendorController;
+use App\Http\Controllers\DiscountController;
 
 
 
@@ -27,7 +28,7 @@ Route::middleware(['auth:sanctum','product_provider'])->group(function () {
     });
 
     Route::prefix('subcategories')->group(function () {
-        Route::get('getall/', [SubCategortController::class, 'index']); // عرض جميع الفئات الفرعية
+        Route::get('/getall_subcategory', [SubCategortController::class, 'index']); // عرض جميع الفئات الفرعية
         Route::get('get_by_category/{category_id}/', [SubCategortController::class, 'get_by_category']); // عرض جميع الفئات الفرعية
         Route::get('show/{id}', [SubCategortController::class, 'show']); // عرض الفئة الفرعية حسب ID
         Route::get('getSubCategory_Attributes/{subCategoryId}', [SubCategortController::class, 'getSubCategoryAttributes']);
@@ -41,6 +42,14 @@ Route::middleware(['auth:sanctum','product_provider'])->group(function () {
     Route::post('store', [ProductController::class, 'store']);
     Route::post('update/{product_id}', [ProductController::class, 'update']);
     Route::delete('delete/{product_id}', [ProductController::class, 'destroy']);
+
+
+    Route::prefix('discount')->group(function () {
+        Route::post('/store/{product_id}', [DiscountController::class, 'store']); // POST /products/1/discount
+        Route::put('/update/{product_id}', [DiscountController::class, 'update']); // POST /products/1/discount
+        Route::post('/changeStatus/{product_id}', [DiscountController::class, 'changeStatus']); // تغيير الحالة
+        Route::delete('/destroy/{product_id}', [DiscountController::class, 'destroy']); // حذف الخصم
+    });
 
     });
 

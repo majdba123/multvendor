@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\OrderProduct;
 use Illuminate\Support\Facades\Auth;
 use App\Models\vendor;
+use Illuminate\Support\Facades\DB;
 use Stripe\Stripe;
 use Stripe\Charge;
 use Illuminate\Support\Facades\Http; // Add this import
@@ -15,60 +16,125 @@ class OrderService
 {
     public function createOrder(array $validatedData)
     {
-        $userId = Auth::id();
+        // بدء transaction
+        DB::beginTransaction();
 
-        // إنشاء الطلب
-        $order = Order::create([
-            'user_id' => $userId,
-            'total_price' => 0,
-            'status' => 'pending',
-            'payment_method' => $validatedData['payment_method'],
-            'payment_status' => 'pending',
-        ]);
+        try {
+            $userId = Auth::id();
 
-        // حساب السعر وإضافة المنتجات
-        $totalPrice = 0;
-        foreach ($validatedData['products'] as $productData) {
-            $product = Product::find($productData['product_id']);
-            $orderProduct = OrderProduct::create([
-                'order_id' => $order->id,
-                'product_id' => $product->id,
-                'quantity' => $productData['quantity'],
-                'total_price' => $product->price * $productData['quantity'],
+            // إنشاء الطلب
+            $order = Order::create([
+                'user_id' => $userId,
+                'total_price' => 0,
+                'status' => 'pending',
+                'payment_method' => $validatedData['payment_method'],
+                'payment_status' => 'pending',
             ]);
-            $totalPrice += $orderProduct->total_price;
-        }
 
-        $order->update(['total_price' => $totalPrice]);
+            // حساب السعر وإضافة المنتجات
+            $totalPrice = 0;
+            $orderProductsDetails = [];
 
-        // إذا كان الدفع عبر Paymob
-        if ($validatedData['payment_method'] === 'paymob') {
-            try {
-                $paymentResponse = $this->createPaymobPayment($order);
-                
-                return response()->json([
-                    'success' => true,
-                    'order' => $order,
-                    'payment_url' => $paymentResponse['payment_url'],
-                    'message' => 'يجب توجيه المستخدم إلى رابط الدفع لإتمام العملية',
+            foreach ($validatedData['products'] as $productData) {
+                $product = Product::with('discount')->find($productData['product_id']);
+
+                if (!$product) {
+                    throw new \Exception('المنتج غير موجود: ' . $productData['product_id']);
+                }
+
+                // حساب السعر مع تطبيق الخصم إذا كان موجوداً وفعالاً
+                $originalPrice = $product->price;
+                $discountApplied = false;
+                $discountValue = 0;
+                $productPrice = $originalPrice;
+
+                if ($product->discount && $product->discount->isActive()) {
+                    $discountApplied = true;
+                    $discountValue = $product->discount->value;
+                    $productPrice = $product->discount->calculateDiscountedPrice($originalPrice);
+                }
+
+                $orderProduct = OrderProduct::create([
+                    'order_id' => $order->id,
+                    'product_id' => $product->id,
+                    'quantity' => $productData['quantity'],
+                    'total_price' => $productPrice * $productData['quantity'],
+                    'status' => 'pending',
                 ]);
-                
-            } catch (\Exception $e) {
-                $order->update(['status' => 'failed', 'payment_status' => 'failed']);
-                
-                return response()->json([
-                    'success' => false,
-                    'message' => 'فشل في إنشاء طلب الدفع: ' . $e->getMessage(),
-                ], 500);
-            }
-        }
 
-        // إذا كان الدفع نقداً أو بأي طريقة أخرى غير Paymob
-        return response()->json([
-            'success' => true,
-            'order' => $order,
-            'message' => 'تم إنشاء الطلب بنجاح',
-        ]);
+                $totalPrice += $orderProduct->total_price;
+
+                // إضافة تفاصيل المنتج للرد
+                $orderProductsDetails[] = [
+                    'id' => $orderProduct->id,
+                    'product_id' => $product->id,
+                    'product_name' => $product->name,
+                    'quantity' => $productData['quantity'],
+                    'original_unit_price' => $originalPrice,
+                    'final_unit_price' => $productPrice,
+                    'discount_applied' => $discountApplied,
+                    'discount_value' => $discountApplied ? $product->discount->value : 0,
+                    'total_price' => $productPrice * $productData['quantity'],
+                ];
+            }
+
+            $order->update(['total_price' => $totalPrice]);
+
+            // تحضير البيانات للرد
+            $responseData = [
+                'success' => true,
+                'order' => [
+                    'id' => $order->id,
+                    'user_id' => $order->user_id,
+                    'total_price' => $order->total_price,
+                    'status' => $order->status,
+                    'payment_method' => $order->payment_method,
+                    'payment_status' => $order->payment_status,
+                    'created_at' => $order->created_at,
+                    'products' => $orderProductsDetails,
+                ],
+                'message' => 'تم إنشاء الطلب بنجاح',
+            ];
+
+            // إذا كان الدفع عبر Paymob
+            if ($validatedData['payment_method'] === 'paymob') {
+                try {
+                    $paymentResponse = $this->createPaymobPayment($order);
+
+                    $responseData['payment_url'] = $paymentResponse['payment_url'];
+                    $responseData['message'] = 'يجب توجيه المستخدم إلى رابط الدفع لإتمام العملية';
+
+                    // تأكيد العملية إذا نجحت كل شيء
+                    DB::commit();
+
+                    return response()->json($responseData);
+
+                } catch (\Exception $e) {
+                    // التراجع عن كل التغييرات في حالة فشل Paymob
+                    DB::rollBack();
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'فشل في إنشاء طلب الدفع: ' . $e->getMessage(),
+                    ], 500);
+                }
+            }
+
+            // إذا كان كل شيء ناجحاً ولم يكن هناك مشاكل
+            DB::commit();
+
+            // إذا كان الدفع نقداً أو بأي طريقة أخرى غير Paymob
+            return response()->json($responseData);
+
+        } catch (\Exception $e) {
+            // التراجع عن كل التغييرات في حالة حدوث أي خطأ
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'فشل في إنشاء الطلب: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     private function createPaymobPayment(Order $order)
@@ -76,18 +142,18 @@ class OrderService
         $apiKey = env('PAYMOB_API_KEY');
         $integrationId = env('PAYMOB_INTEGRATION_ID');
         $iframeId = env('PAYMOB_IFRAME_ID');
-        
+
         // الخطوة 1: الحصول على token authentication
         $authResponse = Http::post('https://accept.paymob.com/api/auth/tokens', [
             'api_key' => $apiKey
         ]);
-        
+
         if (!$authResponse->successful()) {
             throw new \Exception('فشل في الحصول على token من Paymob');
         }
-        
+
         $token = $authResponse->json('token');
-        
+
         // الخطوة 2: إنشاء طلب الدفع
         $orderResponse = Http::post('https://accept.paymob.com/api/ecommerce/orders', [
             'auth_token' => $token,
@@ -96,13 +162,13 @@ class OrderService
             'currency' => 'EGP',
             'items' => [],
         ]);
-        
+
         if (!$orderResponse->successful()) {
             throw new \Exception('فشل في إنشاء طلب الدفع في Paymob');
         }
-        
+
         $paymobOrderId = $orderResponse->json('id');
-        
+
         // الخطوة 3: إنشاء مفتاح دفع
         $paymentKeyResponse = Http::post('https://accept.paymob.com/api/acceptance/payment_keys', [
             'auth_token' => $token,
@@ -110,7 +176,7 @@ class OrderService
             'expiration' => 3600, // صلاحية الرابط بالثواني
             'order_id' => $paymobOrderId,
             'billing_data' => [
-                'apartment' => 'NA', 
+                'apartment' => 'NA',
                 'email' => $order->user->email,
                 'floor' => 'NA',
                 'first_name' => $order->user->name,
@@ -127,19 +193,19 @@ class OrderService
             'currency' => 'EGP',
             'integration_id' => $integrationId
         ]);
-        
+
         if (!$paymentKeyResponse->successful()) {
             throw new \Exception('فشل في إنشاء مفتاح الدفع في Paymob');
         }
-        
+
         $paymentKey = $paymentKeyResponse->json('token');
-        
+
         // حفظ معرف طلب Paymob في الطلب الخاص بنا
         $order->update(['transaction_id' => $paymobOrderId]);
-        
+
         // إنشاء رابط الدفع
         $paymentUrl = "https://accept.paymob.com/api/acceptance/iframes/{$iframeId}?payment_token={$paymentKey}";
-        
+
         return [
             'payment_url' => $paymentUrl,
             'paymob_order_id' => $paymobOrderId
